@@ -1,3 +1,4 @@
+mod dom;
 mod utils;
 
 use wasm_bindgen::prelude::*;
@@ -8,12 +9,8 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
-
 #[wasm_bindgen(start)]
-pub fn greet() {
-    alert("Hello, joustmp!");
+pub fn main() {
+    utils::set_panic_hook();
+    dom::document::build_ui().unwrap();
 }
