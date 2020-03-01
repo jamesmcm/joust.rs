@@ -6,10 +6,10 @@ const DEFAULT_CANVAS_WIDTH: usize = 800;
 const DEFAULT_CANVAS_HEIGHT: usize = 600;
 
 pub fn build_ui() -> Result<
-    ((
+    (
         web_sys::HtmlCanvasElement,
         web_sys::CanvasRenderingContext2d,
-    )),
+    ),
     JsValue,
 > {
     let document = document();
@@ -29,7 +29,7 @@ pub fn build_ui() -> Result<
     canvas.style().set_property("border", "solid")?;
     canvas.set_id("canvas");
 
-    let mut context = canvas
+    let context = canvas
         .get_context("2d")?
         .unwrap()
         .dyn_into::<web_sys::CanvasRenderingContext2d>()?;
