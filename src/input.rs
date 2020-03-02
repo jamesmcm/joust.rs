@@ -1,10 +1,8 @@
-use crate::log;
 pub static mut KEYSTATE: (bool, bool, bool) = (false, false, false);
 // Left, Right, Space
 // TODO: May need Mutex
 
 pub fn keyup(event: web_sys::KeyboardEvent) {
-    log(&format!("keyup {}", event.key_code()));
     unsafe {
         match event.key_code() {
             37 => KEYSTATE.0 = false, // Left
@@ -16,7 +14,6 @@ pub fn keyup(event: web_sys::KeyboardEvent) {
 }
 
 pub fn keydown(event: web_sys::KeyboardEvent) {
-    log(&format!("keydown {}", event.key_code()));
     unsafe {
         match event.key_code() {
             37 => KEYSTATE.0 = true, // Left

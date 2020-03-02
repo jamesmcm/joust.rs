@@ -35,10 +35,10 @@ impl Canvas {
         self.context
             .set_fill_style(&wasm_bindgen::JsValue::from_str("#FFFFFF"));
         self.context.fill_rect(
-            game.player.jouster.position.x as f64,
+            game.player.jouster.position.x,
             self.canvas.height() as f64
                 - game.player.jouster.height as f64
-                - game.player.jouster.position.y as f64,
+                - game.player.jouster.position.y,
             30.0,
             20.0,
         );

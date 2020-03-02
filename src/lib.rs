@@ -14,18 +14,9 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-extern "C" {
-    // Use `js_namespace` here to bind `console.log(..)` instead of just
-    // `log(..)`
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-
 #[wasm_bindgen(start)]
 pub fn main() {
     utils::set_panic_hook();
-    log("test");
     let (canvas, context) = dom::document::build_ui().unwrap();
     let mut canvas = dom::canvas::Canvas::new(canvas, context);
     let mut game = game::Game::new();

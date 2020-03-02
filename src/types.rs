@@ -1,14 +1,13 @@
 use std::ops::AddAssign;
-// TODO: May need to switch from i32 to f64s
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Position {
-    pub x: i32,
-    pub y: i32,
+    pub x: f64,
+    pub y: f64,
 }
 
-impl From<(i32, i32)> for Position {
-    fn from(tuple: (i32, i32)) -> Position {
+impl From<(f64, f64)> for Position {
+    fn from(tuple: (f64, f64)) -> Position {
         Position {
             x: tuple.0,
             y: tuple.1,
@@ -25,18 +24,18 @@ impl AddAssign<Velocity> for Position {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Velocity {
-    pub x: i32,
-    pub y: i32,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Velocity {
     pub fn zero() -> Velocity {
-        Velocity { x: 0, y: 0 }
+        Velocity { x: 0.0, y: 0.0 }
     }
 }
 
-impl From<(i32, i32)> for Velocity {
-    fn from(tuple: (i32, i32)) -> Velocity {
+impl From<(f64, f64)> for Velocity {
+    fn from(tuple: (f64, f64)) -> Velocity {
         Velocity {
             x: tuple.0,
             y: tuple.1,
@@ -46,12 +45,12 @@ impl From<(i32, i32)> for Velocity {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Acceleration {
-    pub x: i32,
-    pub y: i32,
+    pub x: f64,
+    pub y: f64,
 }
 
-impl From<(i32, i32)> for Acceleration {
-    fn from(tuple: (i32, i32)) -> Acceleration {
+impl From<(f64, f64)> for Acceleration {
+    fn from(tuple: (f64, f64)) -> Acceleration {
         Acceleration {
             x: tuple.0,
             y: tuple.1,
@@ -61,7 +60,7 @@ impl From<(i32, i32)> for Acceleration {
 
 impl Acceleration {
     pub fn zero() -> Acceleration {
-        Acceleration { x: 0, y: 0 }
+        Acceleration { x: 0.0, y: 0.0 }
     }
 }
 
