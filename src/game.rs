@@ -2,8 +2,9 @@ use super::types::*;
 const JOUSTER_HEIGHT: usize = 20;
 const JOUSTER_WIDTH: usize = 30;
 const JOUSTER_ACCELERATION_HORIZONTAL: f64 = 0.1;
-const MAX_HORIZONTAL_VELOCITY: f64 = 4.0;
+const MAX_HORIZONTAL_VELOCITY: f64 = 3.0;
 const MAX_VERTICAL_VELOCITY: f64 = 3.0;
+const GRAVITY: f64 = 0.03;
 
 const ARENA_WIDTH: usize = 800;
 use super::input::*;
@@ -11,7 +12,6 @@ use super::input::*;
 pub struct Game {
     pub player: Player,
     pub other_jousters: Vec<Jouster>,
-    space_toggle: bool,
 }
 
 enum GameState {
@@ -24,7 +24,6 @@ impl Game {
         Game {
             player: Player::new(Position::from((400.0, 0.0))), //TODO: Handle dynamic canvas
             other_jousters: Vec::new(),
-            space_toggle: false,
         }
     }
 
@@ -38,14 +37,7 @@ impl Game {
         };
 
         if space_pressed() {
-            if self.space_toggle {
-                // Space is held down, no state change
-            } else {
-                self.space_toggle = true;
-                self.player.jouster.jump();
-            }
-        } else {
-            self.space_toggle = false;
+            self.player.jouster.jump();
         }
 
         // Calculations
@@ -78,6 +70,7 @@ pub struct Jouster {
     pub width: usize,
     pub height: usize,
     pub state: JousterState,
+    pub direction: Direction,
 }
 
 #[derive(PartialEq)]
@@ -86,8 +79,17 @@ pub enum JousterState {
     Walking,
     Downed,
     WalkingDismounted,
+    Braking,
 }
 
+#[derive(PartialEq)]
+pub enum Direction {
+    Left,
+    Right,
+    Still,
+}
+
+use Direction::*;
 use JousterState::*;
 impl Jouster {
     fn new(position: Position) -> Jouster {
@@ -99,9 +101,18 @@ impl Jouster {
             width: JOUSTER_WIDTH,
             height: JOUSTER_HEIGHT,
             state: Walking,
+            direction: Still,
         }
     }
 
+    /// Physics for Jouster
+    /// Constant acceleration and max velocity works well for acceleration
+    /// Braking has different controls - one button press will initiate breaking
+    /// Braking State: Constant deceleration to 0 velocity - unless button pressed to cancel
+    /// by continuing in same direction.
+    /// Flight:
+    /// Acceleration needs to last several frames.
+    /// Then trigger delay before next possible flight trigger.
     fn update(&mut self) -> () {
         self.velocity += self.acceleration;
 
@@ -136,12 +147,16 @@ impl Jouster {
         }
 
         if self.state == Flying {
-            self.acceleration.y -= 0.3;
+            self.acceleration.y -= GRAVITY;
         }
     }
 
     fn jump(&mut self) -> () {
-        self.acceleration.y += 14.0;
+        if self.state == Walking {
+            self.position.y += JOUSTER_HEIGHT as f64;
+        }
+        self.acceleration.y += 0.04;
+        self.velocity.y += 0.05;
         self.state = Flying;
     }
     // TODO: Timer when downed/unmounted etc.

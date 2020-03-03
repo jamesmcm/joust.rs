@@ -18,7 +18,7 @@ pub fn keydown(event: web_sys::KeyboardEvent) {
         match event.key_code() {
             37 => KEYSTATE.0 = true, // Left
             39 => KEYSTATE.1 = true, // Right
-            32 => KEYSTATE.2 = true, // Space - TODO space should trigger on keydown
+            32 => KEYSTATE.2 = true, // Space
             _ => {}
         }
     }
