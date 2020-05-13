@@ -36,6 +36,46 @@ impl Game {
             (true, true) => 0.0,
         };
 
+        // Set Braking if moving in opposite direction
+        // TODO: Use epsilon
+        match (
+            right_pressed(),
+            left_pressed(),
+            self.player.jouster.velocity.x > 0.0,
+            self.player.jouster.velocity.x < 0.0,
+            &self.player.jouster.state,
+        ) {
+            (true, true, _, _, _) => {}
+            (true, false, true, false, JousterState::Braking) => {
+                self.player.jouster.state = JousterState::Walking;
+            }
+            (false, true, false, true, JousterState::Braking) => {
+                self.player.jouster.state = JousterState::Walking;
+            }
+            (false, true, true, false, JousterState::Walking) => {
+                self.player.jouster.state = JousterState::Braking;
+            }
+            (true, false, false, true, JousterState::Walking) => {
+                self.player.jouster.state = JousterState::Braking;
+            }
+            _ => {}
+        }
+
+        if self.player.jouster.velocity.x == 0.0
+            && self.player.jouster.state == JousterState::Braking
+        {
+            self.player.jouster.state = JousterState::Walking;
+        }
+
+        // TODO: Handle skipping past 0
+        if self.player.jouster.state == JousterState::Braking {
+            self.player.jouster.acceleration.x =
+                match self.player.jouster.velocity.x.is_sign_positive() {
+                    false => JOUSTER_ACCELERATION_HORIZONTAL,
+                    true => -JOUSTER_ACCELERATION_HORIZONTAL,
+                }
+        }
+
         if space_pressed() {
             self.player.jouster.jump();
         }
