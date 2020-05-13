@@ -28,13 +28,18 @@ impl Game {
     }
 
     pub fn tick(&mut self) -> () {
+        // TODO: Move logic out of tick
         // Input
-        self.player.jouster.acceleration.x = match (left_pressed(), right_pressed()) {
-            (false, false) => 0.0,
-            (true, false) => -JOUSTER_ACCELERATION_HORIZONTAL,
-            (false, true) => JOUSTER_ACCELERATION_HORIZONTAL,
-            (true, true) => 0.0,
-        };
+        self.player.jouster.acceleration.x =
+            match (left_pressed(), right_pressed(), self.player.jouster.state) {
+                (false, false, _) => 0.0,
+                (true, false, JousterState::Walking) => -JOUSTER_ACCELERATION_HORIZONTAL,
+                (false, true, JousterState::Walking) => JOUSTER_ACCELERATION_HORIZONTAL,
+                (true, false, JousterState::Flying) => -0.2 * JOUSTER_ACCELERATION_HORIZONTAL,
+                (false, true, JousterState::Flying) => 0.2 * JOUSTER_ACCELERATION_HORIZONTAL,
+                (true, true, _) => 0.0,
+                (_, _, _) => 0.0,
+            };
 
         // Set Braking if moving in opposite direction
         // TODO: Use epsilon
@@ -43,7 +48,7 @@ impl Game {
             left_pressed(),
             self.player.jouster.velocity.x > 0.0,
             self.player.jouster.velocity.x < 0.0,
-            &self.player.jouster.state,
+            self.player.jouster.state,
         ) {
             (true, true, _, _, _) => {}
             (true, false, true, false, JousterState::Braking) => {
@@ -102,6 +107,7 @@ impl Player {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Jouster {
     pub position: Position,
     velocity: Velocity,
@@ -111,9 +117,10 @@ pub struct Jouster {
     pub height: usize,
     pub state: JousterState,
     pub direction: Direction,
+    pub jump_delay: u32,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum JousterState {
     Flying,
     Walking,
@@ -122,7 +129,7 @@ pub enum JousterState {
     Braking,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Direction {
     Left,
     Right,
@@ -142,6 +149,7 @@ impl Jouster {
             height: JOUSTER_HEIGHT,
             state: Walking,
             direction: Still,
+            jump_delay: 0,
         }
     }
 
