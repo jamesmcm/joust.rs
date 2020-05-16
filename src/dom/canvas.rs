@@ -31,6 +31,28 @@ impl Canvas {
             self.canvas.height() as f64,
         );
 
+        self.context
+            .set_fill_style(&wasm_bindgen::JsValue::from_str("#FFFFFF"));
+        for platform in game.platforms.iter() {
+            self.context.fill_rect(
+                platform.position.x,
+                self.canvas.height() as f64 - platform.width as f64 - platform.position.y,
+                platform.length,
+                platform.width,
+            );
+        }
+
+        self.context
+            .set_fill_style(&wasm_bindgen::JsValue::from_str("#FF0000"));
+        for enemy in game.other_jousters.iter() {
+            self.context.fill_rect(
+                enemy.position.x,
+                self.canvas.height() as f64 - enemy.height as f64 - enemy.position.y,
+                enemy.width as f64,
+                enemy.height as f64,
+            );
+        }
+
         // Draw player
         self.context
             .set_fill_style(&wasm_bindgen::JsValue::from_str("#FFFFFF"));
@@ -39,8 +61,8 @@ impl Canvas {
             self.canvas.height() as f64
                 - game.player.jouster.height as f64
                 - game.player.jouster.position.y,
-            30.0,
-            20.0,
+            game.player.jouster.width as f64,
+            game.player.jouster.height as f64,
         );
         // Draw others
 

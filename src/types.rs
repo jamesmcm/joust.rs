@@ -1,3 +1,4 @@
+use std::ops::Add;
 use std::ops::AddAssign;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -19,6 +20,16 @@ impl AddAssign<Velocity> for Position {
     fn add_assign(&mut self, other: Velocity) {
         self.x += other.x;
         self.y += other.y;
+    }
+}
+
+impl Add<Velocity> for Position {
+    type Output = Self;
+
+    fn add(mut self, other: Velocity) -> Self {
+        self.x += other.x;
+        self.y += other.y;
+        self
     }
 }
 
