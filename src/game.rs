@@ -1,14 +1,18 @@
+use super::ai::JousterAI;
 use super::types::*;
-const JOUSTER_HEIGHT: usize = 20;
-const JOUSTER_WIDTH: usize = 30;
-const JOUSTER_ACCELERATION_HORIZONTAL: f64 = 0.1;
-const MAX_HORIZONTAL_VELOCITY: f64 = 3.0;
-const MAX_VERTICAL_VELOCITY: f64 = 3.0;
-const GRAVITY: f64 = 0.03;
+pub const JOUSTER_HEIGHT: usize = 20;
+pub const JOUSTER_WIDTH: usize = 30;
+pub const JOUSTER_ACCELERATION_HORIZONTAL: f64 = 0.1;
+pub const MAX_HORIZONTAL_VELOCITY: f64 = 3.0;
+pub const MAX_VERTICAL_VELOCITY: f64 = 3.0;
+pub const GRAVITY: f64 = 0.03;
+pub const EPSILON: f64 = 0.01;
 
-const ARENA_WIDTH: usize = 800;
+pub const ARENA_WIDTH: usize = 800;
+pub const ARENA_HEIGHT: usize = 600;
 use super::input::*;
 
+#[derive(Clone)]
 pub struct Game {
     pub player: Player,
     pub other_jousters: Vec<Jouster>,
@@ -23,19 +27,34 @@ enum GameState {
 impl Game {
     pub fn new() -> Game {
         let mut game = Game {
-            player: Player::new(Position::from((400.0, 3.0))), //TODO: Handle dynamic canvas
-            other_jousters: vec![Jouster::new(Position::from((200.0, 50.0)))],
+            player: Player::new(Position::from((400.0, 20.0))), //TODO: Handle dynamic canvas
+            other_jousters: vec![
+                Jouster::new(Position::from((200.0, 50.0))),
+                Jouster::new(Position::from((50.0, 30.0))),
+                Jouster::new(Position::from((600.0, 80.0))),
+                Jouster::new(Position::from((700.0, 230.0))),
+                Jouster::new(Position::from((350.0, 320.0))),
+            ],
             platforms: vec![
                 Platform::new(Position::from((0.0, 0.0)), 800.0, 5.0),
                 Platform::new(Position::from((350.0, 300.0)), 100.0, 5.0),
+                Platform::new(Position::from((0.0, ARENA_HEIGHT as f64 - 5.0)), 800.0, 5.0),
             ],
         };
         game.other_jousters[0].set_state(Flying);
+        game.other_jousters[0].set_ai(Some(JousterAI::Hunter));
+        game.other_jousters[1].set_state(Flying);
+        game.other_jousters[1].set_ai(Some(JousterAI::Hunter));
+        game.other_jousters[2].set_state(Flying);
+        game.other_jousters[2].set_ai(Some(JousterAI::Hunter));
+        game.other_jousters[3].set_state(Flying);
+        game.other_jousters[3].set_ai(Some(JousterAI::Hunter));
+        game.other_jousters[4].set_state(Flying);
+        game.other_jousters[4].set_ai(Some(JousterAI::Hunter));
         game
     }
 
-    pub fn tick(&mut self) -> () {
-        // TODO: Move player logic out of tick
+    fn process_player(&mut self) -> () {
         // Input
         self.player.jouster.acceleration.x =
             match (left_pressed(), right_pressed(), self.player.jouster.state) {
@@ -49,12 +68,11 @@ impl Game {
             };
 
         // Set Braking if moving in opposite direction
-        // TODO: Use epsilon
         match (
             right_pressed(),
             left_pressed(),
-            self.player.jouster.velocity.x > 0.0,
-            self.player.jouster.velocity.x < 0.0,
+            self.player.jouster.velocity.x > EPSILON,
+            self.player.jouster.velocity.x < -EPSILON,
             self.player.jouster.state,
         ) {
             (true, true, _, _, _) => {}
@@ -73,57 +91,68 @@ impl Game {
             _ => {}
         }
 
-        if self.player.jouster.velocity.x == 0.0
+        if self.player.jouster.velocity.x.abs() < EPSILON
             && self.player.jouster.state == JousterState::Braking
         {
             self.player.jouster.state = JousterState::Walking;
         }
 
-        // TODO: Handle skipping past 0
         if self.player.jouster.state == JousterState::Braking {
-            self.player.jouster.acceleration.x =
-                match self.player.jouster.velocity.x.is_sign_positive() {
-                    false => JOUSTER_ACCELERATION_HORIZONTAL,
-                    true => -JOUSTER_ACCELERATION_HORIZONTAL,
-                }
+            self.player.jouster.acceleration.x = match self.player.jouster.velocity.x > EPSILON {
+                false => 1.5 * JOUSTER_ACCELERATION_HORIZONTAL,
+                true => -1.5 * JOUSTER_ACCELERATION_HORIZONTAL,
+            }
         }
 
         if space_pressed() {
             self.player.jouster.jump();
         }
+    }
 
-        // Colission between Jousters
-        let mut to_remove = vec![];
+    fn restart(&mut self) -> () {
+        let dummygame = Self::new();
 
-        // TODO: Try to merge this logic with below or at least move to function
-        for (i, j1) in self.other_jousters.iter().enumerate() {
-            let new_position2 = j1.position + j1.velocity;
-            let new_position1 = self.player.jouster.position + self.player.jouster.velocity;
-            if new_position1.y <= new_position2.y + (j1.height as f64)
-                && new_position1.y + (self.player.jouster.height as f64) >= new_position2.y
-                && new_position1.x + (self.player.jouster.width as f64) >= new_position2.x
-                && new_position1.x <= new_position2.x + (j1.width as f64)
-            {
-                if new_position1.y >= new_position2.y {
-                    // Kill player
-                } else {
-                    to_remove.push(i);
-                }
+        *self = dummygame.clone();
+    }
+
+    pub fn tick(&mut self) -> () {
+        Self::process_player(self);
+
+        // AI
+        for jouster in self.other_jousters.iter_mut() {
+            if let Some(ai) = jouster.ai {
+                ai.tick(jouster, &self.player);
             }
         }
-        for (i, j1) in self.other_jousters.iter().enumerate() {
-            for (j, j2) in self.other_jousters[i + 1..].iter().enumerate() {
-                let new_position1 = j1.position + j1.velocity;
-                let new_position2 = j2.position + j2.velocity;
-                if new_position1.y <= new_position2.y + (j2.height as f64)
-                    && new_position1.y + (j1.height as f64) >= new_position2.y
-                    && new_position1.x + (j1.width as f64) >= new_position2.x
-                    && new_position1.x <= new_position2.x + (j2.width as f64)
-                {
-                    if new_position1.y >= new_position2.y {
-                        to_remove.push(j);
-                    } else {
-                        to_remove.push(i);
+
+        // Collision between Jousters
+        let mut to_remove = vec![];
+
+        for (i, j1) in self.other_jousters.iter_mut().enumerate() {
+            match jouster_collision(&mut self.player.jouster, j1) {
+                Some(false) => {
+                    return self.restart();
+                } // Kill player
+                Some(true) => {
+                    to_remove.push(i);
+                    self.player.kills += 1;
+                }
+                None => {}
+            }
+        }
+
+        for i in 0..self.other_jousters.len() {
+            let (done, remaining) = self.other_jousters.split_at_mut(i + 1);
+            if let Some(to_check) = done.iter_mut().last() {
+                for (j, j2) in remaining.iter_mut().enumerate() {
+                    match jouster_collision(to_check, j2) {
+                        Some(false) => {
+                            to_remove.push(i);
+                        }
+                        Some(true) => {
+                            to_remove.push(j);
+                        }
+                        None => {}
                     }
                 }
             }
@@ -141,6 +170,36 @@ impl Game {
     }
 }
 
+fn jouster_collision(j1: &mut Jouster, j2: &mut Jouster) -> Option<bool> {
+    let new_position2 = j2.position + j2.velocity;
+    let new_position1 = j1.position + j1.velocity;
+    if new_position1.y <= new_position2.y + (j2.height as f64)
+        && new_position1.y + (j1.height as f64) >= new_position2.y
+        && new_position1.x + (j1.width as f64) - new_position2.x > EPSILON
+        && new_position1.x - (new_position2.x + (j2.width as f64)) < -EPSILON
+    {
+        if new_position1.y - new_position2.y > (JOUSTER_HEIGHT as f64) * 0.75 {
+            Some(true)
+        } else if new_position2.y - new_position1.y > (JOUSTER_HEIGHT as f64) * 0.75 {
+            Some(false)
+        } else {
+            let v = j1.velocity.x.abs() + j2.velocity.x.abs();
+
+            if j1.position.x > j2.position.x {
+                j1.velocity.x = v;
+                j2.velocity.x = -v;
+            } else {
+                j1.velocity.x = -v;
+                j2.velocity.x = v;
+            }
+            None
+        }
+    } else {
+        None
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct Player {
     pub jouster: Jouster,
     kills: i32,
@@ -159,13 +218,14 @@ impl Player {
 pub struct Jouster {
     pub position: Position,
     velocity: Velocity,
-    acceleration: Acceleration,
+    pub acceleration: Acceleration,
     mounted: bool,
     pub width: usize,
     pub height: usize,
     pub state: JousterState,
     pub direction: Direction,
     pub jump_delay: u32,
+    ai: Option<JousterAI>,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -198,10 +258,14 @@ impl Jouster {
             state: Walking,
             direction: Still,
             jump_delay: 0,
+            ai: None,
         }
     }
     fn set_state(&mut self, state: JousterState) {
         self.state = state;
+    }
+    fn set_ai(&mut self, ai: Option<JousterAI>) {
+        self.ai = ai;
     }
 
     /// Physics for Jouster
@@ -213,7 +277,7 @@ impl Jouster {
     /// Acceleration needs to last several frames.
     /// Then trigger delay before next possible flight trigger.
     fn update(&mut self, platforms: &Vec<Platform>) -> () {
-        // TODO: Do colission, then position, then velocity ?
+        // TODO: Do collision, then position, then velocity ?
         self.velocity += self.acceleration;
 
         if self.velocity.x > MAX_HORIZONTAL_VELOCITY {
@@ -272,16 +336,6 @@ impl Jouster {
             self.position.x = ARENA_WIDTH as f64;
         }
 
-        if self.position.y < 0.0 {
-            // TODO: Handle any platforms
-            self.position.y = 0.0;
-            self.velocity.y = 0.0;
-            self.acceleration.y = 0.0;
-            if self.state == Flying {
-                self.state = Walking;
-            }
-        }
-
         if self.state == Flying {
             self.acceleration.y = -GRAVITY;
         }
@@ -290,7 +344,7 @@ impl Jouster {
         }
     }
 
-    fn jump(&mut self) -> () {
+    pub fn jump(&mut self) -> () {
         if self.jump_delay > 0 {
             return;
         }
@@ -306,6 +360,7 @@ impl Jouster {
     // TODO: Timer when downed/unmounted etc.
 }
 
+#[derive(Clone, Copy)]
 pub struct Platform {
     pub position: Position,
     pub length: f64,

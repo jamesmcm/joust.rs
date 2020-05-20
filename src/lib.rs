@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+mod ai;
 mod dom;
 mod game;
 mod input;

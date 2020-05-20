@@ -21,3 +21,10 @@ firefox www/index_static.html
 ```
 
 You can then copy the files in pkg/ and www/index\_static.html to deploy the game on a static HTML page.
+
+## Progress
+
+### 2020-05-20
+
+![Gameplay](./doc/images/newprogress_2020-05-20.gif "Gameplay")
+
